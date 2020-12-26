@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.lbq.mybatis.mapper.WorkOrderDatasourceMapper">
+	<sql id="searchWorkOrderCondition">
+		workorder.createdate &gt;= DATE_ADD(NOW(), INTERVAL -#{timeRange} MONTH)
+		<if test="conditionMap.containsKey('workOrderIsMineDone')">
+			${conditionMap.workOrderIsMineDone.joinType}
+			<choose>
+		    	<when test="conditionMap.containsKey('workOrderIsMineDone')">
+		    		<if test="conditionMap.workOrderIsMineDone.valueList[0] == 0">
+		    			 workorder.user_id = #{globalParamMap.CURRENT_USER} AND workorder.`status` in (8001,8002)
+		    			 and fs.token = 0 and fsu.token = 0
+		    		</if>
+		    		<if test="conditionMap.workOrderIsMineDone.valueList[0] == 1"> 
+		    			 workorder.user_id = #{globalParamMap.CURRENT_USER} AND workorder.`status` in (8003,8004)
+		    		</if>
+		    	</when>
+		    </choose>
+		</if>
+		<if test="conditionMap.containsKey('workOrderTitle')">
+			${conditionMap.workOrderTitle.joinType} workorder.title
+			<choose>
+				<when test='conditionMap.workOrderTitle.expressionValue == "="'>
+					= #{conditionMap.workOrderTitle.valueList[0]}
+				</when>
+				<when test='conditionMap.workOrderTitle.expressionValue == "like"'>
+					like CONCAT('%',REPLACE(#{conditionMap.workOrderTitle.valueList[0]},'%','\%'), '%')
+				</when>
+			</choose>
+		</if>
+		<if test="conditionMap.containsKey('workOrderFlowTaskId')">
+			${conditionMap.workOrderFlowTaskId.joinType} ft.seq_number
+			<choose>
+				<when test='conditionMap.workOrderFlowTaskId.expressionValue == "="'>
+					= #{conditionMap.workOrderFlowTaskId.valueList[0]}
+				</when>
+				<when test='conditionMap.workOrderFlowTaskId.expressionValue == "like"'>
+					like CONCAT('%',REPLACE(#{conditionMap.workOrderFlowTaskId.valueList[0]},'%','\%'), '%')
+				</when>
+			</choose>
+		</if>
+		<if test="conditionMap.containsKey('workOrderFlowTaskTitle')">
+			${conditionMap.workOrderFlowTaskTitle.joinType} ft.title
+			<choose>
+				<when test='conditionMap.workOrderFlowTaskTitle.expressionValue == "="'>
+					= #{conditionMap.workOrderFlowTaskTitle.valueList[0]}
+				</when>
+				<when test='conditionMap.workOrderFlowTaskTitle.expressionValue == "like"'>
+					like CONCAT('%',REPLACE(#{conditionMap.workOrderFlowTaskTitle.valueList[0]},'%','\%'), '%')
+				</when>
+			</choose>
+		</if>
+	</sql>
+	
+	<sql id="searchWorkOrderSort">
+		<if test="sortList.size() > 0">
+			ORDER BY
+			<foreach collection="sortList" item="sortVo" open="" separator="," close="">
+				${sortVo.columnName} ${sortVo.sortType}
+			</foreach>
+		</if>
+	</sql>
+	<select id="searchWorkOrderIdCount" resultType="int">
+		SELECT COUNT(distinct workorder.id) FROM flowtask_workorder workorder
+		left join flowtask ft on ft.id = workorder.task_id
+		left join flowtask_step fs on fs.task_id = workorder.task_id and fs.step_id = workorder.step_id
+		left join flowtask_step_user fsu on fsu.task_id = workorder.task_id and fsu.step_id = workorder.step_id and fsu.type = 1
+		WHERE
+		<include refid="searchWorkOrderCondition" />
+	</select>
+
+	<select id="searchWorkOrderIdList" resultType="java.lang.Long">
+		SELECT distinct workorder.id FROM flowtask_workorder workorder
+		left join flowtask ft on ft.id = workorder.task_id
+		left join flowtask_step fs on fs.task_id = workorder.task_id and fs.step_id = workorder.step_id
+		left join flowtask_step_user fsu on fsu.task_id = workorder.task_id and fsu.step_id = workorder.step_id and fsu.type = 1
+		WHERE
+		<include refid="searchWorkOrderCondition" />
+		<include refid="searchWorkOrderSort" />
+		LIMIT #{startNum}, #{pageSize}
+	</select>
+	
+	<select id="searchWorkOrderProperties" parameterType="java.util.List" resultType="java.util.HashMap">
+		select 
+		  a.`id`,
+		  a.`id`AS 'key',
+		  a.`title`,
+		  a.`owner`,
+		  (SELECT user_name FROM flow_user xx WHERE xx.user_id = a.owner) AS ownerName,
+		  a.`status`,
+		  (SELECT `name` FROM  flow_basekey fb WHERE fb.id = a.status) AS statusName, 
+		  a.`team_id`,
+		  (SELECT `name` FROM flow_team ft WHERE ft.id = a.team_id) AS teamName,
+		  a.`user_id`,
+		  (SELECT user_name FROM flow_user xx WHERE xx.user_id = a.user_id) AS userName,
+		  a.`createdate`,
+		  a.`startdate`,
+		  a.`finishdate`,
+		  a.`content_id`,
+		  a.`cancel_user`,
+		  (SELECT user_name FROM flow_user xx WHERE xx.user_id = a.cancel_user) AS cancelUserName,
+		  a.`canceldate`,
+		  a.`targetdate`,
+		  a.`task_id` AS 'taskId',
+		  a.`step_id` ,
+		  (select ft.seq_number from flowtask ft where a.task_id =ft.id) AS 'workOrderFlowTaskId',
+		  (select ft.title from flowtask ft where a.task_id = ft.id) as workOrderFlowTaskTitle
+		from
+		  `flowtask_workorder` a
+		where
+		a.id IN
+		<foreach collection="keyList" item="item" open="(" separator="," close=")">
+			#{item}
+		</foreach>
+	</select>
+
+	<select id="searchWorkOrderControlProperties" resultType="java.util.HashMap">
+	(
+          SELECT 
+		  a.`id`,
+		  a.id AS `key`,
+		  '开始' AS workOrderControlStepName,
+		 'start' AS workOrderControlType,
+		  a.`task_id` AS 'taskId',
+		  a.`step_id` 
+		FROM
+		  `flowtask_workorder` a 
+		  WHERE STATUS = 8001 AND a.user_id = #{userId}
+		  and a.id in
+		  <foreach collection="keyList" item="item" open="(" separator="," close=")">
+			#{item}
+		  </foreach> 
+		  
+	)UNION
+	(
+		SELECT 
+		  a.`id`,
+		  a.id AS `key`,
+		  '继续处理' AS workOrderControlStepName,
+		  'doing' AS workOrderControlType,
+		  a.`task_id` AS 'taskId',
+		  a.`step_id` 
+		FROM
+		  `flowtask_workorder` a 
+		  WHERE STATUS = 8002 AND a.user_id = #{userId}
+		  and a.id in
+		  <foreach collection="keyList" item="item" open="(" separator="," close=")">
+			#{item}
+		  </foreach> 
+	)
+	</select>
+</mapper>

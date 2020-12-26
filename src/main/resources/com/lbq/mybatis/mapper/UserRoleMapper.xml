@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.lbq.mybatis.mapper.UserRoleMapper">
+
+	<select id="selectByUser" resultType="com.lbq.mybatis.model.SysUser">
+		select 
+		id,
+		user_name userName,
+		user_password userPassword,
+		user_email userEmail,
+		user_info userInfo,
+		head_img headImg,
+		create_time createTime
+		from sys_user
+		<!-- where 1=1 -->
+		<where>
+			<!-- <if test="userName != null and userName != ''"> -->
+			<bind name="userNameLike" value="'?'"/>
+			and user_name like #{userNameLike}
+			<!-- </if> -->
+			<if test="userEmail != null and userEmail != ''">
+			and user_email = ${userEmail}
+			</if>
+		</where>
+	</select>
+</mapper>

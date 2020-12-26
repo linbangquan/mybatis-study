@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration PUBLIC "-//mybatis.org//DTD Config 3.0//EN" "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+	<settings>
+		<setting name="logImpl" value="LOG4J"/>
+		<setting name="mapUnderscoreToCamelCase" value="false"/>
+		<!-- <setting name="aggressiveLazyLoading" value="false"/> -->
+		<!-- <setting name="cacheEnabled" value="true"/> -->
+	</settings>
+	
+	<typeAliases>
+		<package name="com.lbq.mybatis.model"/>
+	</typeAliases>
+	<typeHandlers>
+		<!-- <typeHandler handler="org.apache.ibatis.type.EnumOrdinalTypeHandler" javaType="com.lbq.mybatis.model.Enabled"/> -->
+		<typeHandler handler="com.lbq.mybatis.type.EnabledTypeHandler" javaType="com.lbq.mybatis.model.Enabled"/>
+	</typeHandlers>
+	<!-- <databaseIdProvider type="DB_VENDOR">
+		<property name="SQL Server" value="sqlserver"/>
+		<property name="DB2" value="db2"/>
+		<property name="Oracle" value="oracle"/>
+		<property name="MySQL" value="mysql"/>
+		<property name="PostgreSQL" value="postgresql"/>
+		<property name="Derby" value="derby"/>
+		<property name="HSQL" value="hsqldb"/>
+		<property name="H2" value="h2"/>
+	</databaseIdProvider> -->
+	<plugins>
+		<plugin interceptor="com.lbq.mybatis.plugin.CameHumpInterceptor"/>
+		<plugin interceptor="com.lbq.mybatis.plugin.PageInterceptor">
+			<property name="dialect" value="com.lbq.mybatis.plugin.MySqlDialect"/>
+		</plugin>
+	</plugins>
+	<environments default="development">
+		<environment id="development">
+			<transactionManager type="JDBC">
+				<property name="" value=""/>
+			</transactionManager>
+			<dataSource type="UNPOOLED">
+				<property name="driver" value="com.mysql.jdbc.Driver"/>
+				<property name="url" value="jdbc:mysql://localhost:3306/mybatis"/>
+				<property name="username" value="root"/>
+				<property name="password" value="TechSure12345"/>
+			</dataSource>
+		</environment>
+	</environments>
+	<mappers>
+		<!-- <mapper resource="com/lbq/mybatis/mapper/CountryMapper.xml"/>
+		<mapper resource="com/lbq/mybatis/mapper/UserMapper.xml"/>
+		<mapper resource="com/lbq/mybatis/mapper/RoleMapper.xml"/>
+		<mapper resource="com/lbq/mybatis/mapper/PrivilegeMapper.xml"/>
+		<mapper resource="com/lbq/mybatis/mapper/RolePrivilegeMapper.xml"/>  -->
+		<mapper resource="com/lbq/mybatis/mapper/UserRoleMapper.xml"/>
+		<mapper resource="com/lbq/mybatis/mapper/WorkOrderDatasourceMapper.xml"/>
+		
+		<!-- <package name="com.lbq.mybatis.mapper"/> -->
+	</mappers>
+</configuration>
